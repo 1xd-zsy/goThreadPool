@@ -24,29 +24,29 @@ func (w *poolWorker) execute(ctx context.Context) {
 			w.pool.cond.Signal()
 			close(w.task)
 		}()
-		//for {
-		//	select {
-		//	case f := <-w.task:
-		//		if f == nil {
-		//			return
-		//		}
-		//		f()
-		//		if cloudRecycle := w.pool.putWorker(w); !cloudRecycle {
-		//			return
-		//		}
-		//	case <-ctx.Done():
-		//		return
-		//	}
-		//}
-		for f := range w.task {
-			if f == nil {
-				return
-			}
-			f()
-			if cloudRecycle := w.pool.putWorker(w); !cloudRecycle {
+		for {
+			select {
+			case f := <-w.task:
+				if f == nil {
+					return
+				}
+				f()
+				if cloudRecycle := w.pool.putWorker(w); !cloudRecycle {
+					return
+				}
+			case <-ctx.Done():
 				return
 			}
 		}
+		//for f := range w.task {
+		//	if f == nil {
+		//		return
+		//	}
+		//	f()
+		//	if cloudRecycle := w.pool.putWorker(w); !cloudRecycle {
+		//		return
+		//	}
+		//}
 	}()
 
 }

@@ -39,42 +39,42 @@ func BuildPool(options ...Option) (*Pool, error) {
 	pool.workers = newWorkArray(int(opts.Size))
 	pool.cond = sync.NewCond(pool.lock)
 
-	var ctx context.Context
-	ctx, pool.stopHeartbeat = context.WithCancel(context.Background())
+	//var ctx context.Context
+	pool.ctx, pool.stopHeartbeat = context.WithCancel(context.Background())
 	if pool.options.ExpireWorkerCleanInterval != 0 {
-		go pool.delExpiredWorker(ctx)
+		go pool.delExpiredWorker(pool.ctx)
 	}
 	return pool, nil
 }
 
-//func (p *Pool) Exit() error {
-//	p.setClose()
-//	fmt.Println("exiting")
-//	for p.Waiting() > 0 {
-//
-//	}
-//	p.stopHeartbeat()
-//	p.workers.exit()
-//	fmt.Println("exited")
-//	return nil
-//}
-//
-//func (p *Pool) isExit() bool {
-//	if atomic.LoadInt32(&p.state) == closeState {
-//		return true
-//	}
-//	return false
-//}
-//
-//func (p *Pool) setClose() {
-//	atomic.StoreInt32(&p.state, closeState)
-//}
+func (p *Pool) Exit() error {
+	p.setClose()
+	fmt.Println("exiting")
+	for p.Waiting() > 0 {
+
+	}
+	p.stopHeartbeat()
+	p.workers.exit()
+	fmt.Println("exited")
+	return nil
+}
+
+func (p *Pool) isExit() bool {
+	if atomic.LoadInt32(&p.state) == closeState {
+		return true
+	}
+	return false
+}
+
+func (p *Pool) setClose() {
+	atomic.StoreInt32(&p.state, closeState)
+}
 
 func (p *Pool) Submit(task func()) error {
 	var w *poolWorker
-	//if p.isExit() {
-	//	return errors.New("pool exiting")
-	//}
+	if p.isExit() {
+		return errors.New("pool exiting")
+	}
 	if w = p.getWorker(); w == nil {
 		return errors.New("pool full")
 	}

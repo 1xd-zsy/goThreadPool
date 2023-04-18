@@ -46,11 +46,11 @@ func (wa *workArray) getWorker() *poolWorker {
 	return w
 }
 
-//func (wa *workArray) exit() {
-//	for i, _ := range wa.actives {
-//		wa.actives[i] = nil
-//	}
-//}
+func (wa *workArray) exit() {
+	for i, _ := range wa.actives {
+		wa.actives[i] = nil
+	}
+}
 
 func (wa *workArray) getExpiredWorker(t time.Duration) []*poolWorker {
 	l := wa.len()
