@@ -47,27 +47,27 @@ func BuildPool(options ...Option) (*Pool, error) {
 	return pool, nil
 }
 
-func (p *Pool) Exit() error {
-	p.setClose()
+func (p *Pool) Exit() {
+	if !atomic.CompareAndSwapInt32(&p.state, 0, closeState) {
+		return
+	}
 	fmt.Println("exiting")
-	for p.Waiting() > 0 {
-
+	p.lock.Lock()
+	for {
+		if p.Waiting() == 0 {
+			break
+		}
+		p.cond.Signal()
+		p.cond.Wait()
 	}
 	p.stopHeartbeat()
 	p.workers.exit()
+	p.lock.Unlock()
 	fmt.Println("exited")
-	return nil
 }
 
 func (p *Pool) isExit() bool {
-	if atomic.LoadInt32(&p.state) == closeState {
-		return true
-	}
-	return false
-}
-
-func (p *Pool) setClose() {
-	atomic.StoreInt32(&p.state, closeState)
+	return atomic.LoadInt32(&p.state) == closeState
 }
 
 func (p *Pool) Submit(task func()) error {
@@ -95,7 +95,7 @@ func (p *Pool) Waiting() int {
 }
 
 func (p *Pool) delExpiredWorker(ctx context.Context) {
-	hb := time.NewTimer(p.options.ExpireWorkerCleanInterval)
+	hb := time.NewTicker(p.options.ExpireWorkerCleanInterval)
 
 	defer func() {
 		hb.Stop()
@@ -124,12 +124,10 @@ func (p *Pool) delExpiredWorker(ctx context.Context) {
 
 func (p *Pool) putWorker(worker *poolWorker) bool {
 	if c := p.Cap(); p.Running() > c {
-		p.cond.Broadcast()
 		return false
 	}
 	worker.lastUseTime = time.Now()
 	p.lock.Lock()
-
 	p.workers.putWorker(worker)
 	// 这里只需要通知一个
 	p.cond.Signal()

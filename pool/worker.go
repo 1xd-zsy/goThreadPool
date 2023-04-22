@@ -38,15 +38,6 @@ func (w *poolWorker) execute(ctx context.Context) {
 				return
 			}
 		}
-		//for f := range w.task {
-		//	if f == nil {
-		//		return
-		//	}
-		//	f()
-		//	if cloudRecycle := w.pool.putWorker(w); !cloudRecycle {
-		//		return
-		//	}
-		//}
 	}()
 
 }

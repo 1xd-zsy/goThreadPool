@@ -7,34 +7,6 @@ import (
 	"taskpool/pool"
 )
 
-/*
-var (
-
-	foodOk   = false
-	foodName = ""
-	l        = &sync.Mutex{}
-	cond     = sync.NewCond(l)
-
-)
-
-	func makeFood() {
-		fmt.Print("start make food\n")
-		time.Sleep(3 * time.Second)
-		foodOk = true
-		foodName = "a"
-		fmt.Print("food ok\n")
-		cond.Broadcast()
-	}
-
-	func waitToEat() {
-		cond.L.Lock()
-		defer cond.L.Unlock()
-		for !foodOk {
-			cond.Wait()
-		}
-		fmt.Printf("eat food :%s\n", foodName)
-	}
-*/
 func task(i int) {
 	fmt.Printf("task :%d\n", i)
 	time.Sleep(1 * time.Second)
@@ -58,11 +30,11 @@ func main() {
 		}
 
 	}()
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 10; i++ {
 		a := i
 		fn := func() {
 			time.Sleep(3 * time.Second)
-			fmt.Println("run task :%d\n", a)
+			fmt.Printf("run task :%d\n", a)
 		}
 		go func() {
 			if err := taskPool.Submit(fn); err != nil {
@@ -73,5 +45,18 @@ func main() {
 	}
 	time.Sleep(1 * time.Second)
 	taskPool.Exit()
+	for i := 10; i < 13; i++ {
+		a := i
+		fn := func() {
+			time.Sleep(3 * time.Second)
+			fmt.Printf("run task :%d\n", a)
+		}
+		go func() {
+			if err := taskPool.Submit(fn); err != nil {
+				fmt.Println(a, err)
+			}
+		}()
 
+	}
+	time.Sleep(10 * time.Second)
 }
